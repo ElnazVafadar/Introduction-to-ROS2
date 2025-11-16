@@ -1,7 +1,6 @@
-# >>>>>>>>>>> STUDENT IMPLEMENTATION >>>>>>>>>>>
-#
-# TODO: Define your service message for converting
-# robot linear and angular velocities (v, w) into
-# individual wheel speeds (v_l, v_r).
-#
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+float64 v      
+float64 w       
+---
+float64 v_l     
+float64 v_r     
+

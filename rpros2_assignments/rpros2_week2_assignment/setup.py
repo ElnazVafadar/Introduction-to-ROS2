@@ -28,4 +28,10 @@ setup(
             'wheel2robot_vel_client = rpros2_week2_assignment.wheel2robot_velocity_client:main',
         ],
     },
+    entry_points={
+    'console_scripts': [
+        'wheel2robot_service = rpros2_week2_assignment.wheel2robot_service:main',
+    ],
+},
+
 )

@@ -5,79 +5,70 @@ import math
 import rclpy
 from rclpy.node import Node
 
-# >>>>>>>>>>> STUDENT IMPLEMENTATION >>>>>>>>>>>
-#
-# TODO: Import your custom service interface defined
-# in the rpros2_interfaces/srv directory. This service
-# will be used to convert robot linear and angular
-# velocities (v, w) into individual wheel speeds (v_l, v_r).
-#
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# Import custom service
+from rpros2_interfaces.srv import Wheel2RobotVelocity
 
 
 class Wheel2RobotVelocityServer(Node):
     def __init__(self):
         super().__init__('wheel2robot_velocity_server')
 
-        # >>>>>>>>>>> STUDENT IMPLEMENTATION >>>>>>>>>>>
-        #
-        # TODO: Declare the following ROS 2 parameters with
-        # default values for your differential drive robot:
-        #
-        # wheel_radius          (default: 0.1)      radius of each wheel [m]
-        # wheel_distance        (default: 0.5)      distance between left and right wheels [m]
-        # wheel_velocity_unit   (default: 'rpm')    unit for wheel speed output ['rpm' or 'm/s']
-        #
-        # Tip: Use `ros2 param list` to verify your parameters are correctly declared.
-        #
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        
-        # >>>>>>>>>>> STUDENT IMPLEMENTATION >>>>>>>>>>>
-        #
-        # TODO: Create a service named 'compute_wheel_velocities'
-        # using your custom interface:
-        #
-        #   rpros2_interfaces.srv/Wheel2RobotVelocity
-        #
-        # The service should handle requests in the method
-        # `compute_callback()`, where you will perform the
-        # necessary velocity calculations.
-        #
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        # Declare parameters
+        self.declare_parameter('wheel_radius', 0.1)
+        self.declare_parameter('wheel_distance', 0.5)
+        self.declare_parameter('wheel_velocity_unit', 'rpm')  # rpm or m/s
+
+        # Create the service
+        self.srv = self.create_service(
+            Wheel2RobotVelocity,
+            'compute_wheel_velocities',
+            self.compute_callback
+        )
+
+        self.get_logger().info("Wheel2RobotVelocity Server is running...")
 
     def compute_callback(self, request, response):
 
-        # >>>>>>>>>>> STUDENT IMPLEMENTATION >>>>>>>>>>>
-        #
-        # TODO: Retrieve the declared parameters (wheel_radius,
-        # wheel_distance, wheel_velocity_unit) as they are required
-        # for your calculations.
-        #
-        # Perform the conversion from robot linear and angular
-        # velocities (v, w) in the service request to individual
-        # wheel velocities (v_l, v_r) in the response.
-        #
-        # Use the standard kinematic equations for a differential
-        # drive robot:
-        #   v_r = (2 * v + w * wheel_distance) / 2
-        #   v_l = (2 * v - w * wheel_distance) / 2
-        #
-        # Check the parameter `wheel_velocity_unit` to determine
-        # whether to output the speeds in 'rpm' or 'm/s' and apply
-        # the proper conversion.
-        #
-        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        # Get parameters
+        R = self.get_parameter('wheel_radius').value
+        L = self.get_parameter('wheel_distance').value
+        unit = self.get_parameter('wheel_velocity_unit').value
+
+        v = request.v
+        w = request.w
+
+        # Differential drive equations
+        v_r = (2 * v + w * L) / 2
+        v_l = (2 * v - w * L) / 2
+
+        # Convert to wheel angular velocity
+        # wheel angular velocity = linear_velocity / radius
+        w_r = v_r / R
+        w_l = v_l / R
+
+        # Convert to rpm if required
+        if unit == 'rpm':
+            w_r = (w_r * 60) / (2 * math.pi)
+            w_l = (w_l * 60) / (2 * math.pi)
+
+        response.v_r = w_r
+        response.v_l = w_l
+
+        self.get_logger().info(
+            f"Request -> v={v} m/s, w={w} rad/s | "
+            f"Response -> v_l={w_l:.3f}, v_r={w_r:.3f} ({unit})"
+        )
 
         return response
 
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = Wheel2RobotVelocityServer()
     rclpy.spin(node)
-
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
+
